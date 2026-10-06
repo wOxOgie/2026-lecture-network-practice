@@ -21,7 +21,7 @@ addresses must agree. A name behind a CDN may legitimately return a different
 address each time; the harness compares the *set of authoritative nameservers*
 you ended at for those, not the address.
 """
-import argparse, subprocess, sys
+import argparse, os, subprocess, sys
 
 # Root servers. Everything starts here; there is no earlier step.
 ROOT_SERVERS = [
@@ -86,6 +86,8 @@ class Resolver:
         """
         args = ["dig", f"@{server}", name, "A", "+norecurse",
                 "+time=2", "+tries=1", "+nocmd", "+nostats", "+noquestion"]
+        if os.environ.get("DIG_TCP"):        # for networks where UDP/53 is broken
+            args.append("+tcp")
         r = subprocess.run(args, capture_output=True, text=True)
         if r.returncode != 0 or "status: NOERROR" not in r.stdout:
             if "status: NXDOMAIN" in r.stdout:

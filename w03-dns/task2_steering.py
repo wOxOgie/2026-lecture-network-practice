@@ -81,6 +81,8 @@ def dig(name, rtype="A", server=None):
     args = ["dig", "+short", name, rtype]
     if server:
         args.insert(1, f"@{server}")
+    if os.environ.get("DIG_TCP"):            # for networks where UDP/53 is broken
+        args.append("+tcp")
     out = subprocess.run(args, capture_output=True, text=True).stdout
     return [l.strip() for l in out.splitlines() if l.strip()]
 
@@ -239,6 +241,25 @@ def report():
           f"to a different resolver or network** ({n_pfx} of {len(cdn)} with no /24 in common). "
           f"Networks: {', '.join(networks)}.",
           ""]
+    if len(networks) >= 2:
+        # Same resolver label ("system" = that network's own ISP resolver),
+        # different network: does where *I* am change the answer?
+        a, b = networks[0], networks[1]
+        rows, x_set, x_pfx = [], 0, 0
+        for site in cdn:
+            ans = data[site]["answers"]
+            s1, s2 = ans[a].get("system", []), ans[b].get("system", [])
+            d_set = set(s1) != set(s2)
+            d_pfx = not (prefixes(s1) & prefixes(s2))
+            x_set += d_set
+            x_pfx += d_pfx
+            rows.append(f"| {site} | {', '.join(s1)} | {', '.join(s2)} | "
+                        f"{'yes' if d_set else 'no'} | {'yes' if d_pfx else 'no'} |")
+        L += [f"### Same question from two networks (each network's own resolver)", "",
+              f"| site | {a} | {b} | differs (set) | differs (/24) |", "|---|---|---|---|---|"]
+        L += rows
+        L += ["", f"**Across networks: {x_set} of {len(cdn)} CDN-hosted sites answered "
+              f"differently from {a} vs. {b}** ({x_pfx} with no /24 in common).", ""]
     if len(networks) < 2:
         L += ["> **One network only (path B for B3).** The two places I could measure from "
               "(cafe Wi-Fi `30coffee_5G` and `KT_PASCUCCI_5G`) both used the same KT resolver "

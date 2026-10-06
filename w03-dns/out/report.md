@@ -1,6 +1,6 @@
 # Week 3 · Task 2 report
 
-Networks measured: cafe-wifi  
+Networks measured: pascucci-wifi, skt-hotspot  
 Resolvers: system (system resolver of that network), google (8.8.8.8), quad9 (9.9.9.9)
 
 ## B4 · Who serves each site
@@ -31,21 +31,58 @@ Resolvers: system (system resolver of that network), google (8.8.8.8), quad9 (9.
 
 Each resolver was asked twice per site, and the address sets were unioned, so plain round-robin inside one answer pool does not count as a difference. *Differs (/24)* is the stricter test: the answers do not even share a /24.
 
-| site | cafe-wifi: system | cafe-wifi: google | cafe-wifi: quad9 | differs (set) | differs (/24) |
-|---|---|---|---|---|---|
-| www.microsoft.com | 104.94.218.45 | 23.60.186.45 | 23.199.22.71 | yes | yes |
-| www.netflix.com | 207.45.72.1, 207.45.73.1 | 207.45.72.1, 207.45.73.1 | 207.45.72.1, 207.45.73.1 | no | no |
-| www.adobe.com | 23.32.4.146, 23.32.4.162, 23.32.4.168, 23.32.4.178, 23.32.4.187, 23.32.4.201, 23.32.4.209, 23.32.4.210, 23.32.4.227 | 23.32.56.16, 23.32.56.42 | 2.22.234.137, 2.22.234.150, 2.22.234.155 | yes | yes |
-| www.cnn.com | 146.75.51.5 | 151.101.131.5, 151.101.195.5, 151.101.3.5, 151.101.67.5 | 151.101.131.5, 151.101.195.5, 151.101.3.5, 151.101.67.5 | yes | yes |
-| www.apple.com | 104.94.216.37 | 184.28.183.49, 184.31.228.249 | 23.63.77.47 | yes | yes |
-| www.korea.ac.kr *(not CDN)* | 163.152.6.10 | 163.152.6.10 | 163.152.6.10 | no | no |
-| www.stanford.edu | 15.197.167.90, 3.33.186.135 | 15.197.167.90, 3.33.186.135 | 15.197.167.90, 3.33.186.135 | no | no |
-| www.bbc.co.uk | 146.75.48.81 | 151.101.0.81, 151.101.128.81, 151.101.192.81, 151.101.64.81 | 151.101.0.81, 151.101.128.81, 151.101.192.81, 151.101.64.81 | yes | yes |
-| www.spotify.com | 146.75.51.42 | 151.101.131.42, 151.101.195.42, 151.101.3.42, 151.101.67.42 | 151.101.131.42, 151.101.195.42, 151.101.3.42, 151.101.67.42 | yes | yes |
-| www.github.com *(not CDN)* | 20.200.245.247 | 20.200.245.247 | 20.27.177.113 | yes | yes |
-| www.wikipedia.org | 103.102.166.224 | 103.102.166.224 | 103.102.166.224 | no | no |
-| www.nytimes.com | 146.75.49.164 | 151.101.1.164, 151.101.129.164, 151.101.193.164, 151.101.65.164 | 151.101.1.164, 151.101.129.164, 151.101.193.164, 151.101.65.164 | yes | yes |
+| site | pascucci-wifi: system | pascucci-wifi: google | pascucci-wifi: quad9 | skt-hotspot: system | skt-hotspot: google | skt-hotspot: quad9 | differs (set) | differs (/24) |
+|---|---|---|---|---|---|---|---|---|
+| www.microsoft.com | 104.94.218.45 | 104.94.218.45 | 184.28.10.89 | 23.49.206.40 | 23.60.186.45 | 23.199.22.71, 23.63.226.92 | yes | yes |
+| www.netflix.com | 207.45.72.1, 207.45.73.1 | 207.45.72.1, 207.45.73.1 | 207.45.72.1, 207.45.73.1 | 207.45.72.1, 207.45.73.1 | 207.45.72.1, 207.45.73.1 | 207.45.72.1, 207.45.73.1 | no | no |
+| www.adobe.com | 23.32.4.168, 23.32.4.186, 23.32.4.187, 23.32.4.195, 23.32.4.200, 23.32.4.201, 23.32.4.202, 23.32.4.208, 23.32.4.209, 23.32.4.210, 23.32.4.227 | 23.216.159.114, 23.216.159.99 | 23.219.78.45, 23.219.78.49 | 23.32.4.177, 23.32.4.178, 23.32.4.186, 23.32.4.209, 23.32.4.210, 23.32.4.216, 23.32.4.218, 23.32.4.227 | 23.35.218.147, 23.35.218.156 | 2.22.234.137, 2.22.234.155, 23.48.167.80, 23.48.167.84 | yes | yes |
+| www.cnn.com | 146.75.51.5 | 151.101.131.5, 151.101.195.5, 151.101.3.5, 151.101.67.5 | 151.101.131.5, 151.101.195.5, 151.101.3.5, 151.101.67.5 | 146.75.51.5 | 151.101.131.5, 151.101.195.5, 151.101.3.5, 151.101.67.5 | 151.101.131.5, 151.101.195.5, 151.101.3.5, 151.101.67.5 | yes | yes |
+| www.apple.com | 104.94.216.37 | 23.217.180.246, 23.60.185.29 | 23.217.180.246 | 23.49.205.28 | 23.49.205.28 | 184.29.44.235 | yes | yes |
+| www.korea.ac.kr *(not CDN)* | 163.152.6.10 | 163.152.6.10 | 163.152.6.10 | 163.152.6.10 | 163.152.6.10 | 163.152.6.10 | no | no |
+| www.stanford.edu | 15.197.167.90, 3.33.186.135 | 15.197.167.90, 3.33.186.135 | 15.197.167.90, 3.33.186.135 | 15.197.167.90, 3.33.186.135 | 15.197.167.90, 3.33.186.135 | 15.197.167.90, 3.33.186.135 | no | no |
+| www.bbc.co.uk | 146.75.48.81 | 151.101.0.81, 151.101.128.81, 151.101.192.81, 151.101.64.81 | 151.101.0.81, 151.101.128.81, 151.101.192.81, 151.101.64.81 | 146.75.48.81 | 151.101.0.81, 151.101.128.81, 151.101.192.81, 151.101.64.81 | 151.101.0.81, 151.101.128.81, 151.101.192.81, 151.101.64.81 | yes | yes |
+| www.spotify.com | 146.75.51.42 | 151.101.131.42, 151.101.195.42, 151.101.3.42, 151.101.67.42 | 151.101.131.42, 151.101.195.42, 151.101.3.42, 151.101.67.42 | 146.75.51.42 | 151.101.131.42, 151.101.195.42, 151.101.3.42, 151.101.67.42 | 151.101.131.42, 151.101.195.42, 151.101.3.42, 151.101.67.42 | yes | yes |
+| www.github.com *(not CDN)* | 20.200.245.247 | 20.200.245.247 | 20.27.177.113 | 20.200.245.247 | 20.200.245.247 | 20.27.177.113 | yes | yes |
+| www.wikipedia.org | 103.102.166.224 | 103.102.166.224 | 103.102.166.224 | 103.102.166.224 | 103.102.166.224 | 103.102.166.224 | no | no |
+| www.nytimes.com | 146.75.49.164 | 151.101.1.164, 151.101.129.164, 151.101.193.164, 151.101.65.164 | 151.101.1.164, 151.101.129.164, 151.101.193.164, 151.101.65.164 | 146.75.49.164 | 151.101.1.164, 151.101.129.164, 151.101.193.164, 151.101.65.164 | 151.101.1.164, 151.101.129.164, 151.101.193.164, 151.101.65.164 | yes | yes |
 
-**Steering number: 7 of 10 CDN-hosted sites answered differently to a different resolver or network** (7 of 10 with no /24 in common). Networks: cafe-wifi.
+**Steering number: 7 of 10 CDN-hosted sites answered differently to a different resolver or network** (7 of 10 with no /24 in common). Networks: pascucci-wifi, skt-hotspot.
 
-> **One network only (path B for B3).** The two places I could measure from (cafe Wi-Fi `30coffee_5G` and `KT_PASCUCCI_5G`) both used the same KT resolver 168.126.63.1, so a second run would not have been a different vantage point. Instead the comparison is between resolvers at very different distances: KT (an ISP resolver in Korea) vs. Google 8.8.8.8 and Quad9 9.9.9.9 (anycast). This weakens the conclusion: it shows that answers depend on *where the resolver is*, not that they follow *where I am*.
+### Same question from two networks (each network's own resolver)
+
+| site | pascucci-wifi | skt-hotspot | differs (set) | differs (/24) |
+|---|---|---|---|---|
+| www.microsoft.com | 104.94.218.45 | 23.49.206.40 | yes | yes |
+| www.netflix.com | 207.45.72.1, 207.45.73.1 | 207.45.72.1, 207.45.73.1 | no | no |
+| www.adobe.com | 23.32.4.168, 23.32.4.186, 23.32.4.187, 23.32.4.195, 23.32.4.200, 23.32.4.201, 23.32.4.202, 23.32.4.208, 23.32.4.209, 23.32.4.210, 23.32.4.227 | 23.32.4.177, 23.32.4.178, 23.32.4.186, 23.32.4.209, 23.32.4.210, 23.32.4.216, 23.32.4.218, 23.32.4.227 | yes | no |
+| www.cnn.com | 146.75.51.5 | 146.75.51.5 | no | no |
+| www.apple.com | 104.94.216.37 | 23.49.205.28 | yes | yes |
+| www.stanford.edu | 15.197.167.90, 3.33.186.135 | 15.197.167.90, 3.33.186.135 | no | no |
+| www.bbc.co.uk | 146.75.48.81 | 146.75.48.81 | no | no |
+| www.spotify.com | 146.75.51.42 | 146.75.51.42 | no | no |
+| www.wikipedia.org | 103.102.166.224 | 103.102.166.224 | no | no |
+| www.nytimes.com | 146.75.49.164 | 146.75.49.164 | no | no |
+
+**Across networks: 3 of 10 CDN-hosted sites answered differently from pascucci-wifi vs. skt-hotspot** (2 with no /24 in common).
+
+## Part A · The capture (`out/dns.pcapng`)
+
+Taken on my own laptop (Wi-Fi `KT_PASCUCCI_5G`, 172.30.1.67) while running
+`python3 task1_resolve.py www.korea.ac.kr` and `www.netflix.com`. The raw capture also held
+other applications' lookups; for privacy the file keeps only my resolver's packets
+(names under korea.ac.kr / netflix.com / nflxso.net, ISP resolver traffic removed).
+
+- **Why there are unanswered queries first (frames 1–16).** Over UDP, every query to the root
+  servers went out and no reply came back on this network — my resolver tried a, b, c root in
+  turn (R4) and gave up. Frames 17–26 are my diagnosis (UDP vs. TCP). The resolver was then run
+  with DNS over **TCP** (`+tcp`), which this network let through. On the SKT hotspot, UDP worked.
+- **A2 · query and its response** — frame **41** (query to 163.152.11.6) and frame **42**
+  (response) carry the same transaction ID **0x7261**.
+- **A3 · delegation vs. answer** —
+  frame **36** is a **delegation**: from root 198.41.0.4, answer count **0**, authority **6** (`NS`
+  for `kr.`), additional **11** (glue `A`/`AAAA`).
+  frame **42** is an **answer**: from korea.ac.kr's server, answer count **1**
+  (`www.korea.ac.kr A 163.152.6.10`), authority 0. Same message format, different sections filled.
+- **A4 · largest response** — frame **50**, **905 bytes**: the root's delegation for
+  `www.prod.ftl.netflix.com`. It is large because it lists all **13** `.com` gTLD servers in
+  AUTHORITY plus **27** glue records (IPv4 and IPv6) in ADDITIONAL.
