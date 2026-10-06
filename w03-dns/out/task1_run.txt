@@ -1,0 +1,21 @@
+  ok    www.korea.ac.kr        you=163.152.6.10     dig=163.152.6.10   hops=3
+  ok    dns.google             you=8.8.4.4          dig=8.8.4.4,8.8.8.8   hops=3
+  ok    en.wikipedia.org       you=103.102.166.224  dig=103.102.166.224,103.102.166.224,103.102.166.224   hops=6
+  ok    www.stanford.edu       you=3.33.186.135     dig=15.197.167.90,3.33.186.135,15.197.167.90,3.33.186.135   hops=6
+  ok    www.microsoft.com      you=23.60.186.45     dig=104.94.218.45,104.94.218.45,104.94.218.45,104.94.218.45,104.94.218.45,104.94.218.45,104.94.218.45   hops=10  <- differs, but this name is CDN-hosted. Explain it.
+
+  5/5 ok
+
+  1. asked 198.41.0.4  (www.netflix.com)
+  2. asked 192.41.162.30  (www.netflix.com)
+  3. asked 205.251.192.81  (www.netflix.com)
+  4. asked 198.41.0.4  (www.prod.ftl.netflix.com)
+  5. asked 192.41.162.30  (www.prod.ftl.netflix.com)
+  6. asked 205.251.192.81  (www.prod.ftl.netflix.com)
+  7. asked     198.41.0.4  (e.ns.nflxso.net)
+  8. asked     192.55.83.30  (e.ns.nflxso.net)
+  9. asked     45.57.8.1  (e.ns.nflxso.net)
+  10. asked 45.57.8.1  (www.prod.ftl.netflix.com)
+
+  www.netflix.com -> 207.45.73.1
+  glue-less nameserver lookups: 1

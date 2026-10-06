@@ -74,10 +74,21 @@ class YourCache:
 
     def __init__(self, upstream):
         self.upstream = upstream
-        raise NotImplementedError("write your cache")
+        self.entries = {}         # name -> (address, expires_at), O(1) lookup
+        self.hits = 0
+        self.misses = 0
 
     def lookup(self, name, now):
-        raise NotImplementedError("write your cache")
+        """Serve from cache only while the record's own TTL still holds."""
+        entry = self.entries.get(name)
+        if entry is not None and now <= entry[1]:
+            self.hits += 1
+            return entry[0]
+        self.misses += 1
+        address, ttl = self.upstream(name)
+        self.entries[name] = (address, now + ttl)   # keep the TTL, don't invent one
+        return address
 
     def stats(self):
-        return {}
+        return {"entries": len(self.entries), "hits": self.hits,
+                "misses": self.misses}

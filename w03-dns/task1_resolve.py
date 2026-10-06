@@ -70,9 +70,99 @@ class Resolver:
         dig @198.41.0.4 www.korea.ac.kr +norecurse
     """
 
-    def resolve(self, name):
-        raise NotImplementedError(
-            "Implement the iterative walk: root -> TLD -> authoritative")
+    MAX_DEPTH = 4        # nested walks for glue-less nameservers (R3, R6)
+    MAX_STEPS = 20       # referrals followed in one walk (R6)
+    MAX_CNAMES = 8       # CNAME restarts in one walk (R5, R6)
+
+    def __init__(self):
+        self.glueless = 0    # how many extra walks a missing glue cost us
+
+    def query(self, server, name):
+        """One non-recursive question to one server.
+
+        Returns {"answer": [...], "authority": [...], "additional": [...]}
+        where each record is (owner, type, data), or None if the server did
+        not answer.
+        """
+        args = ["dig", f"@{server}", name, "A", "+norecurse",
+                "+time=2", "+tries=1", "+nocmd", "+nostats", "+noquestion"]
+        r = subprocess.run(args, capture_output=True, text=True)
+        if r.returncode != 0 or "status: NOERROR" not in r.stdout:
+            if "status: NXDOMAIN" in r.stdout:
+                raise LookupError(f"{name}: NXDOMAIN from {server}")
+            return None
+        sections = {"answer": [], "authority": [], "additional": []}
+        current = None
+        for line in r.stdout.splitlines():
+            if line.startswith(";; ANSWER SECTION"):
+                current = "answer"
+            elif line.startswith(";; AUTHORITY SECTION"):
+                current = "authority"
+            elif line.startswith(";; ADDITIONAL SECTION"):
+                current = "additional"
+            elif line.startswith(";") or not line.strip():
+                continue
+            elif current:
+                f = line.split()
+                # owner  ttl  IN  type  data...
+                if len(f) >= 5:
+                    sections[current].append(
+                        (f[0].rstrip(".").lower(), f[3], f[4].rstrip(".").lower()))
+        return sections
+
+    def resolve(self, name, depth=0):
+        if depth > self.MAX_DEPTH:
+            raise RecursionError(f"glue-less chain deeper than {self.MAX_DEPTH}")
+        qname = name.rstrip(".").lower()
+        servers = list(ROOT_SERVERS)            # R2: always start at the root
+        path, cnames, indent = [], 0, "    " * depth
+
+        for _ in range(self.MAX_STEPS):
+            # R4: try each server until one answers
+            for server in servers:
+                resp = self.query(server, qname)
+                if resp is not None:
+                    break
+            else:
+                raise TimeoutError(f"no server answered for {qname}: {servers}")
+            path.append(f"{indent}{server}  ({qname})")
+
+            # 1. An answer for the name we asked?
+            a = [d for o, t, d in resp["answer"] if o == qname and t == "A"]
+            if a:
+                return a[0], path
+            cname = [d for o, t, d in resp["answer"] if o == qname and t == "CNAME"]
+            if cname:                           # R5: start over with the new name
+                cnames += 1
+                if cnames > self.MAX_CNAMES:
+                    raise RecursionError(f"more than {self.MAX_CNAMES} CNAMEs")
+                qname, servers = cname[0], list(ROOT_SERVERS)
+                continue
+
+            # 2. Otherwise it must be a delegation: NS names in authority
+            ns_names = [d for o, t, d in resp["authority"] if t == "NS"]
+            if not ns_names:
+                raise LookupError(f"{qname}: no answer and no delegation from {server}")
+            glue = [d for o, t, d in resp["additional"]
+                    if t == "A" and o in ns_names]
+            if glue:
+                servers = glue
+                continue
+
+            # 3. R3: delegation without glue - resolve a nameserver's name first
+            for ns in ns_names:
+                self.glueless += 1
+                try:
+                    ns_addr, sub_path = self.resolve(ns, depth + 1)
+                except (LookupError, TimeoutError):
+                    continue
+                path.extend(sub_path)
+                servers = [ns_addr]
+                break
+            else:
+                raise LookupError(f"could not resolve any NS of {qname}: {ns_names}")
+
+        raise RecursionError(f"more than {self.MAX_STEPS} referrals for {name}")
 
 
 # ------------------------------------------------------------------- harness
@@ -119,10 +209,12 @@ def main():
     if a.verify:
         sys.exit(verify())
 
-    addr, path = Resolver().resolve(a.name)
+    r = Resolver()
+    addr, path = r.resolve(a.name)
     for i, server in enumerate(path, 1):
         print(f"  {i}. asked {server}")
     print(f"\n  {a.name} -> {addr}")
+    print(f"  glue-less nameserver lookups: {r.glueless}")
 
 
 if __name__ == "__main__":

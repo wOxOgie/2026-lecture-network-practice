@@ -85,33 +85,188 @@ def dig(name, rtype="A", server=None):
     return [l.strip() for l in out.splitlines() if l.strip()]
 
 
-def collect():
+CHAINS = os.path.join(OUT, "chains.json")
+MAX_CHAIN = 10
+REPEATS = 2              # ask each resolver twice so round-robin is visible
+
+
+def follow_chain(name, server=None):
+    """[name, cname1, cname2, ...] - every hop until there is no CNAME."""
+    chain = [name]
+    while len(chain) <= MAX_CHAIN:
+        nxt = dig(chain[-1], "CNAME", server)
+        if not nxt:
+            break
+        chain.append(nxt[0].rstrip(".").lower())
+    return chain
+
+
+def a_records(name, server):
+    ips = set()
+    for _ in range(REPEATS):
+        ips.update(l for l in dig(name, "A", server) if l[0].isdigit())
+    return sorted(ips)
+
+
+def collect(network):
     """Gather raw chains and per-resolver answers into out/chains.json.
 
-    You write this. Roughly:
-      for each site: follow CNAMEs to the end, then for each resolver in
-      RESOLVERS record the A records it returns.
+    Results are kept per network label, so running it again on a second
+    network adds to the file instead of replacing it (B3).
     """
-    raise NotImplementedError("build the collector")
+    data = json.load(open(CHAINS, encoding="utf-8")) if os.path.exists(CHAINS) else {}
+    for site in SITES:
+        chain = follow_chain(site)
+        answers = {label: a_records(site, server) for label, server in RESOLVERS.items()}
+        first = next((ip for ips in answers.values() for ip in ips), None)
+        ptr = dig(first, "PTR") if first else []
+        entry = data.setdefault(site, {"chain": chain, "answers": {}, "ptr": {}})
+        entry["chain"] = chain
+        entry["answers"][network] = answers
+        entry["ptr"][network] = {first: ptr[0].rstrip(".") if ptr else None} if first else {}
+        print(f"  {site:<20} chain={len(chain) - 1}  final={chain[-1]}")
+        for label, ips in answers.items():
+            print(f"      {label:<7} {', '.join(ips) or '-'}")
+    with open(CHAINS, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    print(f"\n  saved {CHAINS}  (network = {network})")
+
+
+# Second-level public suffixes that appear in SITES or their chains.  Without
+# these, "the last two labels" of www.bbc.co.uk would be "co.uk".
+TWO_LEVEL_SUFFIXES = {"co.uk", "ac.kr", "co.kr", "or.kr", "go.kr"}
+
+# Ground truth, checked by hand (who owns the final zone, and does a CDN
+# sit in front of the site).  The rule below does NOT see this table; it
+# is only used to grade the rule.
+TRUTH = {
+    "www.microsoft.com": ("third party", "Akamai (akamaiedge.net)"),
+    "www.netflix.com":   ("own CDN",     "Netflix Open Connect, own zone"),
+    "www.adobe.com":     ("third party", "Akamai (akamai.net)"),
+    "www.cnn.com":       ("third party", "Fastly"),
+    "www.apple.com":     ("third party", "Akamai (edgekey -> akamaiedge)"),
+    "www.korea.ac.kr":   ("no CDN",      "university server, one address"),
+    "www.stanford.edu":  ("third party", "Netlify, fronted by AWS Global Accelerator anycast"),
+    "www.bbc.co.uk":     ("third party", "Fastly"),
+    "www.spotify.com":   ("third party", "Fastly"),
+    "www.github.com":    ("own",         "GitHub's own servers (Microsoft/Azure address space)"),
+    "www.wikipedia.org": ("own CDN",     "Wikimedia Foundation runs its own caching sites; wikimedia.org is the same owner"),
+    "www.nytimes.com":   ("third party", "Fastly (via nyt.net)"),
+}
+
+
+def registrable(name):
+    """example: a.b.bbc.co.uk -> bbc.co.uk, x.akamaiedge.net -> akamaiedge.net"""
+    labels = name.rstrip(".").lower().split(".")
+    n = 3 if ".".join(labels[-2:]) in TWO_LEVEL_SUFFIXES else 2
+    return ".".join(labels[-n:])
+
+
+def rule(site, chain):
+    """My rule: third party if the chain ends in a different registrable
+    domain (public-suffix aware) than the site itself."""
+    return "third party" if registrable(chain[-1]) != registrable(site) else "first party"
+
+
+def prefixes(ips):
+    return {".".join(ip.split(".")[:3]) for ip in ips}
 
 
 def report():
-    """Read out/chains.json and produce out/report.md.
+    """Read out/chains.json and produce out/report.md."""
+    data = json.load(open(CHAINS, encoding="utf-8"))
+    networks = sorted({n for e in data.values() for n in e["answers"]})
+    L = ["# Week 3 · Task 2 report", "",
+         f"Networks measured: {', '.join(networks)}  ",
+         f"Resolvers: " + ", ".join(f"{k} ({v or 'system resolver of that network'})"
+                                    for k, v in RESOLVERS.items()), "",
+         "## B4 · Who serves each site", "",
+         "**Rule** — a site is served by a *third party* if its CNAME chain ends in a "
+         "different registrable domain than the site's own (`www.bbc.co.uk` → `bbc.co.uk`, "
+         "public-suffix aware for `co.uk`/`ac.kr`). Ground truth was checked by hand.", "",
+         "| site | chain length | final zone | third party? (truth) | rule's verdict | match |",
+         "|---|---|---|---|---|---|"]
+    wrong = []
+    for site in SITES:
+        e = data[site]
+        chain = e["chain"]
+        truth, why = TRUTH[site]
+        verdict = rule(site, chain)
+        ok = (verdict == "third party") == (truth == "third party")
+        if not ok:
+            wrong.append((site, truth, why, verdict, chain))
+        L.append(f"| {site} | {len(chain) - 1} | `{registrable(chain[-1])}` | "
+                 f"{truth} — {why} | {verdict} | {'✓' if ok else '✗'} |")
 
-    You write this too - including the classification rule that decides
-    whether a site is on a third-party CDN.
-    """
-    raise NotImplementedError("build the report")
+    L += ["", "### Where the rule is wrong", ""]
+    for site, truth, why, verdict, chain in wrong:
+        L.append(f"- **{site}** → `{' → '.join(chain)}`. The rule says *{verdict}*, "
+                 f"but it is *{truth}*: {why}. Comparing domain names cannot tell that "
+                 f"two different domains belong to one organisation.")
+    L += ["- **Blind spot even when it is right**: `www.korea.ac.kr` and `www.github.com` "
+          "have no third-party CNAME, and the rule can only say *first party*. A site behind "
+          "an anycast CDN with **no CNAME at all** (the address itself belongs to the CDN) "
+          "would also be called first party — the rule looks at names, never at who owns "
+          "the address. `www.stanford.edu` shows the address side: its addresses "
+          "(3.33.x / 15.197.x) are AWS Global Accelerator anycast, a third party the "
+          "name `netlifyglobalcdn.com` does not mention."]
+
+    # ------------------------------------------------------------- steering
+    cdn = [s for s in SITES if TRUTH[s][0] != "no CDN" and TRUTH[s][0] != "own"]
+    L += ["", "## B5 · Does DNS steer you?", "",
+          "Each resolver was asked twice per site, and the address sets were unioned, so "
+          "plain round-robin inside one answer pool does not count as a difference. "
+          "*Differs (/24)* is the stricter test: the answers do not even share a /24.", "",
+          "| site | " + " | ".join(f"{n}: {r}" for n in networks for r in RESOLVERS)
+          + " | differs (set) | differs (/24) |",
+          "|---|" + "---|" * (len(networks) * len(RESOLVERS) + 2)]
+    n_set = n_pfx = 0
+    for site in SITES:
+        sets = [(n, r, tuple(data[site]["answers"].get(n, {}).get(r, [])))
+                for n in networks for r in RESOLVERS]
+        nonempty = [s for _, _, s in sets if s]
+        d_set = len(set(nonempty)) > 1
+        pfx = [prefixes(s) for s in nonempty]
+        d_pfx = any(not (a & b) for i, a in enumerate(pfx) for b in pfx[i + 1:])
+        if site in cdn:
+            n_set += d_set
+            n_pfx += d_pfx
+        cells = [", ".join(s) or "-" for _, _, s in sets]
+        L.append(f"| {site}{'' if site in cdn else ' *(not CDN)*'} | " + " | ".join(cells)
+                 + f" | {'yes' if d_set else 'no'} | {'yes' if d_pfx else 'no'} |")
+    L += ["",
+          f"**Steering number: {n_set} of {len(cdn)} CDN-hosted sites answered differently "
+          f"to a different resolver or network** ({n_pfx} of {len(cdn)} with no /24 in common). "
+          f"Networks: {', '.join(networks)}.",
+          ""]
+    if len(networks) < 2:
+        L += ["> **One network only (path B for B3).** The two places I could measure from "
+              "(cafe Wi-Fi `30coffee_5G` and `KT_PASCUCCI_5G`) both used the same KT resolver "
+              "168.126.63.1, so a second run would not have been a different vantage point. "
+              "Instead the comparison is between resolvers at very different distances: KT "
+              "(an ISP resolver in Korea) vs. Google 8.8.8.8 and Quad9 9.9.9.9 (anycast). "
+              "This weakens the conclusion: it shows that answers depend on *where the "
+              "resolver is*, not that they follow *where I am*.", ""]
+
+    part_a = os.path.join(OUT, "partA.md")
+    if os.path.exists(part_a):
+        L += [open(part_a, encoding="utf-8").read().strip(), ""]
+
+    with open(os.path.join(OUT, "report.md"), "w", encoding="utf-8") as f:
+        f.write("\n".join(L))
+    print("\n".join(L))
 
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--collect", action="store_true")
     p.add_argument("--report", action="store_true")
+    p.add_argument("--network", default="home",
+                   help="label for the network you are on now (e.g. home, hotspot)")
     a = p.parse_args()
     os.makedirs(OUT, exist_ok=True)
     if a.collect:
-        collect()
+        collect(a.network)
     elif a.report:
         report()
     else:

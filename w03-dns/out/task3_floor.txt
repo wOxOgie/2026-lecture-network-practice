@@ -1,0 +1,12 @@
+name                   ttl  queries  base_up base_stale  floor
+www.microsoft.com       20      322       52        189    118
+www.cnn.com             30      189       47         77     76
+www.netflix.com         60      109       37          0     37
+www.spotify.com        120      100       38          0     23
+www.github.com         300       63       27          0     11
+www.wikipedia.org      600       57       31          0      6
+www.korea.ac.kr       3600       46       25          0      1
+www.stanford.edu      3600       45       27          0      1
+dns.google           86400       35       21          0      1
+a.root-servers.net   86400       34       20          0      1
+total                          1000      325        266    275
