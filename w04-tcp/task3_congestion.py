@@ -53,12 +53,31 @@ class YourControl:
       That distinction has a name in the textbook.
     """
 
+    # Losses show up at roughly pipe + queue (about 31 here). Cutting to 0.6 of
+    # that lands the window near the pipe itself (about 19-20), so the link
+    # never goes idle after a cut, and growing at half a packet per RTT keeps
+    # the window near there for longer before it fills the queue again.
+    BETA = 0.6
+    GROWTH = 0.5       # packets per RTT in congestion avoidance
+
     def __init__(self):
-        self.window = 1
-        raise NotImplementedError("write your congestion control")
+        self.window = 1.0
+        self.ssthresh = float("inf")
+        self.recovering = 0        # ACKs still to see before a new cut counts
 
     def on_ack(self):
-        raise NotImplementedError
+        if self.recovering > 0:
+            self.recovering -= 1
+        if self.window < self.ssthresh:
+            self.window += 1                       # slow start: double per RTT
+        else:
+            self.window += self.GROWTH / self.window   # congestion avoidance
 
     def on_loss(self):
-        raise NotImplementedError
+        # One overflow drops a burst of packets, and their timeouts arrive
+        # together. That is one congestion event, so cut once per window.
+        if self.recovering > 0:
+            return
+        self.ssthresh = max(2.0, self.window * self.BETA)
+        self.window = self.ssthresh
+        self.recovering = int(self.window)

@@ -67,26 +67,80 @@ class Sender:
     why in observation.md.
     """
 
+    # Selective repeat (§3.4.4): up to WINDOW packets in flight, each with its
+    # own timer, and only the ones that time out are sent again.
+    WINDOW = 16
+    TIMEOUT = 4        # steps; a packet that is not lost is ACKed in 1-2 steps
+
     def __init__(self, data_channel, ack_channel, data):
-        raise NotImplementedError("write your sender")
+        self.out, self.inp = data_channel, ack_channel
+        self.chunks = [data[i:i + PAYLOAD] for i in range(0, len(data), PAYLOAD)]
+        self.base = 0              # lowest seq not yet ACKed
+        self.next = 0              # next seq never sent
+        self.acked = set()
+        self.sent_at = {}          # seq -> step it was last (re)sent
+        self.now = 0
 
     def step(self):
         """Do one unit of work. Return False when you believe you are done."""
-        raise NotImplementedError
+        self.now += 1
+
+        # Read every ACK that has arrived. A duplicate or stale ACK only
+        # re-marks something already marked, so it cannot do harm.
+        while (pkt := self.inp.receive()) is not None:
+            kind, seq = pkt[0], pkt[1]
+            if kind == "ACK" and 0 <= seq < len(self.chunks):
+                self.acked.add(seq)
+                self.sent_at.pop(seq, None)
+        while self.base in self.acked:
+            self.base += 1
+        if self.base >= len(self.chunks):
+            return False
+
+        # Retransmit only what has timed out.
+        for seq, t in list(self.sent_at.items()):
+            if self.now - t >= self.TIMEOUT:
+                self._send(seq)
+
+        # Fill the window with new packets.
+        while self.next < min(self.base + self.WINDOW, len(self.chunks)):
+            self._send(self.next)
+            self.next += 1
+        return True
+
+    def _send(self, seq):
+        self.out.send(("DATA", seq, self.chunks[seq]))
+        self.sent_at[seq] = self.now
 
 
 class Receiver:
     """Your receiver. Hands back the reassembled bytes via `.data()`."""
 
     def __init__(self, data_channel, ack_channel):
-        raise NotImplementedError("write your receiver")
+        self.inp, self.out = data_channel, ack_channel
+        self.buffer = {}           # seq -> payload, out-of-order arrivals wait here
+        self.expected = 0          # next seq to hand up in order
+        self.delivered = []
 
     def step(self):
-        raise NotImplementedError
+        while (pkt := self.inp.receive()) is not None:
+            kind, seq, payload = pkt
+            if kind != "DATA":
+                continue
+            # ACK every copy, including duplicates: if our first ACK was lost,
+            # this is the only way the sender learns the packet arrived.
+            self.out.send(("ACK", seq))
+            # A duplicate (already delivered or already buffered) is dropped
+            # here, so it can never be written twice.
+            if seq >= self.expected and seq not in self.buffer:
+                self.buffer[seq] = payload
+            while self.expected in self.buffer:
+                self.delivered.append(self.buffer.pop(self.expected))
+                self.expected += 1
 
     def data(self):
         """The bytes reassembled so far."""
-        raise NotImplementedError
+        return b"".join(self.delivered)
 
 
 # ------------------------------------------------------------------- harness
