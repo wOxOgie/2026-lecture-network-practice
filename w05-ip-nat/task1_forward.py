@@ -15,6 +15,30 @@ exactly the thing you are supposed to understand this week.
 """
 import argparse
 
+FULL = 0xFFFFFFFF
+
+
+def ip_to_int(dotted):
+    """'10.20.30.70' -> 169090630. Four octets, each 0-255, shifted into place."""
+    parts = dotted.strip().split(".")
+    if len(parts) != 4:
+        raise ValueError(f"not a dotted quad: {dotted!r}")
+    n = 0
+    for p in parts:
+        if not p.isdigit() or not 0 <= int(p) <= 255:
+            raise ValueError(f"bad octet {p!r} in {dotted!r}")
+        n = (n << 8) | int(p)
+    return n
+
+
+def int_to_ip(n):
+    return ".".join(str((n >> shift) & 0xFF) for shift in (24, 16, 8, 0))
+
+
+def mask_of(prefix_len):
+    """/24 -> 0xFFFFFF00. /0 -> 0 (shifting by 32 then masking handles it)."""
+    return (FULL << (32 - prefix_len)) & FULL
+
 
 def parse_cidr(cidr):
     """'163.152.6.0/24' -> (network as int, prefix length).
@@ -23,7 +47,16 @@ def parse_cidr(cidr):
     whose host bits are set when they should not be (163.152.6.5/24 is a
     common way to write a host, but it is not a network).
     """
-    raise NotImplementedError("parse a CIDR block")
+    addr, sep, plen = cidr.strip().partition("/")
+    if not sep or not plen.isdigit():
+        raise ValueError(f"no prefix length in {cidr!r}")
+    plen = int(plen)
+    if not 0 <= plen <= 32:
+        raise ValueError(f"prefix length {plen} outside 0-32")
+    net = ip_to_int(addr)
+    if net & ~mask_of(plen) & FULL:
+        raise ValueError(f"{cidr} has host bits set - that is a host, not a network")
+    return net, plen
 
 
 def network_range(cidr):
@@ -32,7 +65,13 @@ def network_range(cidr):
     Careful at the edges. /31 and /32 do not have a usable host range in the
     ordinary sense - decide what you return and say so in observation.md.
     """
-    raise NotImplementedError("compute the range")
+    net, plen = parse_cidr(cidr)
+    bcast = net | (~mask_of(plen) & FULL)
+    if plen == 32:          # a single host route: the one address is everything
+        return int_to_ip(net), int_to_ip(net), int_to_ip(net)
+    if plen == 31:          # RFC 3021 point-to-point: both addresses usable, no broadcast
+        return int_to_ip(net), int_to_ip(bcast), None
+    return int_to_ip(net + 1), int_to_ip(bcast - 1), int_to_ip(bcast)
 
 
 class ForwardingTable:
@@ -45,11 +84,21 @@ class ForwardingTable:
     length, the table is malformed - say what you do.
     """
 
+    def __init__(self):
+        self.entries = {}                     # (network, prefix_len) -> next_hop
+
     def add(self, cidr, next_hop):
-        raise NotImplementedError
+        # Same prefix added twice: the later one replaces the earlier, the way
+        # a router installs a newer route over an older one for the same prefix.
+        self.entries[parse_cidr(cidr)] = next_hop
 
     def lookup(self, address):
-        raise NotImplementedError
+        addr = ip_to_int(address)
+        best_len, best_hop = -1, None
+        for (net, plen), hop in self.entries.items():
+            if addr & mask_of(plen) == net and plen > best_len:
+                best_len, best_hop = plen, hop
+        return best_hop
 
 
 # ------------------------------------------------------------------- harness

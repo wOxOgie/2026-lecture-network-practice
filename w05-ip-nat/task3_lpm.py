@@ -54,11 +54,28 @@ class YourTable:
     Say which you chose and what it cost you in memory.
     """
 
+    # Chosen: group by prefix length. One dict per length that is actually in
+    # use, {network: next_hop}, asked longest-first so the first hit is the
+    # longest match. Work per lookup is bounded by the number of distinct
+    # lengths in the table (7 here, at most 33) - not by the number of routes.
+
     def __init__(self):
-        raise NotImplementedError("write your table")
+        self.by_len = {}                      # prefix_len -> {network >> shift: next_hop}
+        self.probes = []                      # [(shift, dict)], longest first
 
     def add(self, network, prefix_len, next_hop):
-        raise NotImplementedError
+        # Keys are stored as network >> (32 - len), so a probe is one shift
+        # and one dict get - no mask to build per lookup.
+        shift = 32 - prefix_len
+        if prefix_len not in self.by_len:
+            self.by_len[prefix_len] = {}
+            self.probes = [(32 - plen, self.by_len[plen])
+                           for plen in sorted(self.by_len, reverse=True)]
+        self.by_len[prefix_len][network >> shift] = next_hop
 
     def lookup(self, address):
-        raise NotImplementedError
+        for shift, table in self.probes:
+            hop = table.get(address >> shift)
+            if hop is not None:
+                return hop
+        return None
