@@ -18,7 +18,7 @@ close to the worst thing you can do with this traffic.
 Correctness first: every frame whose destination is reachable must still reach
 it. A switch that floods less because it delivers less is not a switch.
 """
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 
 
 class NaiveSwitch:
@@ -73,7 +73,32 @@ class YourSwitch:
     BROADCAST = "ff:ff:ff:ff:ff:ff"
 
     def __init__(self, ports, capacity):
-        raise NotImplementedError("write your switch")
+        self.ports = ports
+        self.capacity = capacity
+        self.table = {}                            # mac -> port, at most capacity
+        self.heard = Counter()                     # mac -> frames seen naming it
 
     def handle(self, frame, in_port):
-        raise NotImplementedError
+        src, dst, now = frame
+        # Evidence: how often a station has appeared, as sender or receiver.
+        # Being asked for is what makes an entry worth keeping; sending is the
+        # best predictor of being asked for on this traffic.
+        self.heard[src] += 1
+        if dst != self.BROADCAST:
+            self.heard[dst] += 1
+
+        if src in self.table or len(self.table) < self.capacity:
+            self.table[src] = in_port
+        else:
+            # Evict the least-heard entry - but only to make room for a source
+            # heard more often than it. A one-off sender is declined and simply
+            # stays unknown (flooded if anyone ever asks for it).
+            victim = min(self.table, key=self.heard.__getitem__)
+            if self.heard[src] > self.heard[victim]:
+                del self.table[victim]
+                self.table[src] = in_port
+
+        if dst == self.BROADCAST or dst not in self.table:
+            return [p for p in range(self.ports) if p != in_port]
+        out = self.table[dst]
+        return [] if out == in_port else [out]

@@ -30,7 +30,8 @@ class Switch:
     AGE_SECONDS = 300
 
     def __init__(self, ports):
-        raise NotImplementedError("write your switch")
+        self.ports = ports
+        self.entries = {}                  # mac -> (port, time last heard from)
 
     def handle(self, frame, in_port):
         """Learn from the source, then decide where the frame goes.
@@ -46,11 +47,26 @@ class Switch:
         Rule 5 is why a switch works at all before it has learned anything, and
         it is also what Task 3 is about.
         """
-        raise NotImplementedError
+        src, dst, now = frame
+        self._age(now)
+        # Rule 1: newest evidence wins, so a station that moved is relearned
+        # here and its timer restarts.
+        self.entries[src] = (in_port, now)
+
+        everyone_else = [p for p in range(self.ports) if p != in_port]
+        if dst == self.BROADCAST or dst not in self.entries:
+            return everyone_else                              # rules 3 and 5
+        out = self.entries[dst][0]
+        return [] if out == in_port else [out]                # rules 2 and 4
 
     def table(self):
         """{mac: port} as currently learned. Aged-out entries must be gone."""
-        raise NotImplementedError
+        return {mac: port for mac, (port, _) in self.entries.items()}
+
+    def _age(self, now):
+        """Forget every station not heard from for more than AGE_SECONDS."""
+        self.entries = {mac: (port, t) for mac, (port, t) in self.entries.items()
+                        if now - t <= self.AGE_SECONDS}
 
 
 # ------------------------------------------------------------------- harness

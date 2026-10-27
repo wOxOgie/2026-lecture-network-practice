@@ -1,0 +1,20 @@
+# Task 3 - eviction / admission policies compared on bench.build() (seed 246), same harness bench.run()
+# admit = learn a new source only if heard more often than the entry it would evict
+# 'static top64' = hindsight oracle (keeps the 64 busiest stations of the whole trace) - reference only
+  baseline     wasted   323,380   delivered 46,347   missed      0
+  LRU          wasted   218,500   delivered 46,347   missed      0
+     cut 32.4%
+  LFU          wasted   158,056   delivered 46,347   missed      0
+     cut 51.1%
+  LFU+admit    wasted   156,998   delivered 46,347   missed      0
+     cut 51.5%
+  admit dst    wasted   159,712   delivered 46,347   missed      0
+     cut 50.6%
+  admit dec5k  wasted   158,884   delivered 46,347   missed      0
+     cut 50.9%
+  admit dec20k wasted   157,458   delivered 46,347   missed      0
+     cut 51.3%
+  LRU+admit    wasted   158,102   delivered 46,347   missed      0
+     cut 51.1%
+  static top64 wasted   154,974   delivered 46,347   missed      0
+     cut 52.1%
