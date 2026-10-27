@@ -33,7 +33,28 @@ def dijkstra(graph, source):
 
     You write the loop. `heapq` is allowed; `networkx` is not.
     """
-    raise NotImplementedError("implement Dijkstra")
+    return {d: c for d, (c, _) in _spf(graph, source).items() if d != source}
+
+
+def _spf(graph, source):
+    """Dijkstra that also carries the first hop. Returns {node: (cost, first_hop)}.
+
+    Heap entries are (cost, first_hop, node), so among equal-cost paths the one
+    leaving by the alphabetically smallest neighbour is settled first. That is
+    the tie-break: deterministic, and every router agrees on it.
+    """
+    import heapq
+    pq = [(0, "", source)]
+    settled = {}
+    while pq:
+        cost, hop, node = heapq.heappop(pq)
+        if node in settled:
+            continue
+        settled[node] = (cost, hop or None)
+        for nbr, w in graph[node].items():
+            if nbr not in settled:
+                heapq.heappush(pq, (cost + w, nbr if node == source else hop, nbr))
+    return settled
 
 
 def forwarding_table(graph, source):
@@ -48,7 +69,7 @@ def forwarding_table(graph, source):
     works, but think about what a router does when two shortest paths tie, and
     pick a rule. Say which in observation.md.
     """
-    raise NotImplementedError("implement the forwarding table")
+    return {d: hop for d, (_, hop) in _spf(graph, source).items() if d != source}
 
 
 def link_down(graph, a, b):

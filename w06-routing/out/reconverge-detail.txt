@@ -1,0 +1,112 @@
+# run 2026-10-06 13:26:00
+
+## 1 cut - r1 eth1 admin down
+   action at t=0.0 s, polled r1/r2/r3 in parallel
+   r1: first change   0.5 s, settled   0.5 s
+   r2: first change   0.5 s, settled   0.5 s
+   r3: first change   0.5 s, settled   0.5 s
+   t=  0.5s r1:
+      O>* 172.18.0.0/16 [110/30] via 172.19.0.3, eth0, weight 1
+      O   172.19.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O>* 172.20.0.0/16 [110/20] via 172.19.0.3, eth0, weight 1
+   t=  0.5s r2:
+      O   172.18.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O>* 172.19.0.0/16 [110/20] via 172.20.0.3, eth1, weight 1
+      O   172.20.0.0/16 [110/10] is directly connected, eth1, weight 1
+   t=  0.5s r3:
+      O>* 172.18.0.0/16 [110/20] via 172.20.0.2, eth1, weight 1
+      O   172.19.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O   172.20.0.0/16 [110/10] is directly connected, eth1, weight 1
+
+## 2 restore - r1 eth1 admin up
+   action at t=0.0 s, polled r1/r2/r3 in parallel
+   r1: first change   0.5 s, settled   9.4 s
+   r2: first change  14.8 s, settled  14.8 s
+   r3: first change   0.5 s, settled   0.5 s
+   t=  0.5s r1:
+      O   172.18.0.0/16 [110/10] is directly connected, eth1, weight 1
+      O   172.19.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O>* 172.20.0.0/16 [110/20] via 172.19.0.3, eth0, weight 1
+   t=  0.5s r3:
+      O>* 172.18.0.0/16 [110/20] via 172.19.0.2, eth0, weight 1
+        *                        via 172.20.0.2, eth1, weight 1
+      O   172.19.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O   172.20.0.0/16 [110/10] is directly connected, eth1, weight 1
+   t=  9.4s r1:
+      O   172.18.0.0/16 [110/10] is directly connected, eth1, weight 1
+      O   172.19.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O>* 172.20.0.0/16 [110/20] via 172.18.0.2, eth1, weight 1
+        *                        via 172.19.0.3, eth0, weight 1
+   t= 14.8s r2:
+      O   172.18.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O>* 172.19.0.0/16 [110/20] via 172.18.0.3, eth0, weight 1
+        *                        via 172.20.0.3, eth1, weight 1
+      O   172.20.0.0/16 [110/10] is directly connected, eth1, weight 1
+
+## 3 silent failure - drop OSPF on r1 eth1, link stays up
+   action at t=0.0 s, polled r1/r2/r3 in parallel
+   r1: first change  36.9 s, settled  38.0 s
+   r2: first change  36.9 s, settled  36.9 s
+   r3: no change within 90 s
+   t= 36.9s r1:
+      O   172.19.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O>* 172.20.0.0/16 [110/20] via 172.19.0.3, eth0, weight 1
+   t= 36.9s r2:
+      O   172.18.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O>* 172.19.0.0/16 [110/20] via 172.20.0.3, eth1, weight 1
+      O   172.20.0.0/16 [110/10] is directly connected, eth1, weight 1
+   t= 38.0s r1:
+      O   172.18.0.0/16 [110/10] is directly connected, eth1, weight 1
+      O   172.19.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O>* 172.20.0.0/16 [110/20] via 172.19.0.3, eth0, weight 1
+
+## 4 silent repair - remove the drop rules
+   action at t=0.0 s, polled r1/r2/r3 in parallel
+   r1: first change   2.6 s, settled   2.8 s
+   r2: first change  12.1 s, settled  12.1 s
+   r3: no change within 90 s
+   t=  2.6s r1:
+      O   172.18.0.0/16 [110/30] via 172.19.0.3, eth0, weight 1
+      O   172.19.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O>* 172.20.0.0/16 [110/20] via 172.19.0.3, eth0, weight 1
+   t=  2.8s r1:
+      O   172.18.0.0/16 [110/10] is directly connected, eth1, weight 1
+      O   172.19.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O>* 172.20.0.0/16 [110/20] via 172.18.0.2, eth1, weight 1
+        *                        via 172.19.0.3, eth0, weight 1
+   t= 12.1s r2:
+      O   172.18.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O>* 172.19.0.0/16 [110/20] via 172.18.0.3, eth0, weight 1
+        *                        via 172.20.0.3, eth1, weight 1
+      O   172.20.0.0/16 [110/10] is directly connected, eth1, weight 1
+
+## 5 cost change - r1 eth0 cost 10 -> 100
+   action at t=0.0 s, polled r1/r2/r3 in parallel
+   r1: first change   0.5 s, settled   0.5 s
+   r2: first change   0.5 s, settled   0.5 s
+   r3: no change within 90 s
+   t=  0.5s r1:
+      O   172.18.0.0/16 [110/10] is directly connected, eth1, weight 1
+      O   172.19.0.0/16 [110/30] via 172.18.0.2, eth1, weight 1
+      O>* 172.20.0.0/16 [110/20] via 172.18.0.2, eth1, weight 1
+   t=  0.5s r2:
+      O   172.18.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O>* 172.19.0.0/16 [110/20] via 172.20.0.3, eth1, weight 1
+      O   172.20.0.0/16 [110/10] is directly connected, eth1, weight 1
+
+## 6 cost back - r1 eth0 cost 100 -> 10
+   action at t=0.0 s, polled r1/r2/r3 in parallel
+   r1: first change   0.5 s, settled   0.5 s
+   r2: first change   0.5 s, settled   0.5 s
+   r3: no change within 90 s
+   t=  0.5s r1:
+      O   172.18.0.0/16 [110/10] is directly connected, eth1, weight 1
+      O   172.19.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O>* 172.20.0.0/16 [110/20] via 172.18.0.2, eth1, weight 1
+        *                        via 172.19.0.3, eth0, weight 1
+   t=  0.5s r2:
+      O   172.18.0.0/16 [110/10] is directly connected, eth0, weight 1
+      O>* 172.19.0.0/16 [110/20] via 172.18.0.3, eth0, weight 1
+        *                        via 172.20.0.3, eth1, weight 1
+      O   172.20.0.0/16 [110/10] is directly connected, eth1, weight 1
+

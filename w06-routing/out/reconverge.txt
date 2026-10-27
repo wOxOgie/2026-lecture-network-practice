@@ -1,0 +1,18 @@
+# B4 / B5 / C - measured reconvergence, 3 FRR 9.1 routers (Docker Desktop, Windows 11), 2026-10-06
+# OSPF timers (show ip ospf interface, FRR defaults - not set in frr.conf):
+#   Hello 10 s, Dead 40 s, Wait 40 s, Retransmit 5, network type BROADCAST
+
+## scenario.sh cut  (r1 polled once per second via docker compose exec)
+재수렴 감지: 3 초
+
+## out/measure_reconverge.py  (r1, r2, r3 polled in parallel, ~0.5 s resolution; full log in reconverge-detail.txt)
+event                                         r1        r2        r3
+1 cut      r1 eth1 admin down                 0.5 s     0.5 s     0.5 s
+2 restore  r1 eth1 admin up                   9.4 s    14.8 s     0.5 s
+3 silent   OSPF dropped on r1 eth1 (iptables) 38.0 s    36.9 s     no change needed
+4 unsilent drop rules removed                  2.8 s    12.1 s     no change needed
+5 cost     r1 eth0 cost 10 -> 100              0.5 s     0.5 s     no change needed
+6 cost     r1 eth0 cost 100 -> 10              0.5 s     0.5 s     no change needed
+
+(0.5 s = changed by the first poll, i.e. at most ~0.5 s; the 3 s from scenario.sh is
+ 1 s sleep granularity plus slow `docker compose exec` calls on Windows)

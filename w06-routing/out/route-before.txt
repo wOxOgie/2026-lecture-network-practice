@@ -1,0 +1,18 @@
+# B1 - OSPF tables before the cut (all three routers, converged; 2026-10-06 13:20:50)
+# r1 eth0=172.19/16 (net_a, to r3)  eth1=172.18/16 (net_b, to r2)   r2 eth1 / r3 eth1 = 172.20/16 (net_c)
+
+===== r1 =====
+O   172.18.0.0/16 [110/10] is directly connected, eth1, weight 1, 00:00:34
+O   172.19.0.0/16 [110/10] is directly connected, eth0, weight 1, 00:00:39
+O>* 172.20.0.0/16 [110/20] via 172.18.0.2, eth1, weight 1, 00:00:29
+  *                        via 172.19.0.3, eth0, weight 1, 00:00:29
+===== r2 =====
+O   172.18.0.0/16 [110/10] is directly connected, eth0, weight 1, 00:01:20
+O>* 172.19.0.0/16 [110/20] via 172.18.0.3, eth0, weight 1, 00:00:30
+  *                        via 172.20.0.3, eth1, weight 1, 00:00:30
+O   172.20.0.0/16 [110/10] is directly connected, eth1, weight 1, 00:00:40
+===== r3 =====
+O>* 172.18.0.0/16 [110/20] via 172.19.0.2, eth0, weight 1, 00:00:31
+  *                        via 172.20.0.2, eth1, weight 1, 00:00:31
+O   172.19.0.0/16 [110/10] is directly connected, eth0, weight 1, 00:01:21
+O   172.20.0.0/16 [110/10] is directly connected, eth1, weight 1, 00:01:21

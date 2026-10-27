@@ -1,0 +1,126 @@
+﻿### tracert www.snu.ac.kr   (2026-10-06 13:29:48, KUWIFI Sejong campus)
+
+Tracing route to new.snu.ac.kr [147.46.10.129]
+over a maximum of 14 hops:
+
+  1     4 ms     2 ms     2 ms  172.16.0.2 
+  2     8 ms     3 ms     1 ms  192.168.98.132 
+  3    20 ms    10 ms    10 ms  163.152.233.129 
+  4     3 ms     3 ms     3 ms  175.121.235.141 
+  5     3 ms     2 ms     4 ms  10.103.0.142 
+  6    10 ms     5 ms    10 ms  10.222.25.120 
+  7    11 ms     7 ms     7 ms  10.222.19.171 
+  8    14 ms    11 ms     7 ms  10.222.36.119 
+  9     *        *        *     Request timed out.
+ 10    11 ms     6 ms    12 ms  211.108.22.106 
+ 11    18 ms    15 ms    15 ms  147.46.254.187 
+ 12     *        *        *     Request timed out.
+ 13     *        *        *     Request timed out.
+ 14     *        *        *     Request timed out.
+
+Trace complete.
+### tracert www.washington.edu   (2026-10-06 13:31:02, KUWIFI Sejong campus)
+
+Tracing route to www-uw.umslb.s.uw.edu [128.208.60.183]
+over a maximum of 14 hops:
+
+  1     2 ms     3 ms     2 ms  172.16.0.2 
+  2     9 ms     2 ms     2 ms  192.168.98.132 
+  3     5 ms     4 ms     3 ms  163.152.233.129 
+  4    10 ms     4 ms     5 ms  175.121.235.141 
+  5    11 ms     4 ms     3 ms  10.103.0.142 
+  6    18 ms     9 ms    15 ms  10.222.25.124 
+  7    12 ms     6 ms     4 ms  10.222.38.147 
+  8   359 ms   202 ms   121 ms  10.222.3.79 
+  9   231 ms   233 ms   204 ms  pnwgp-six1.pnw-gigapop.net [206.81.80.84] 
+ 10   325 ms   131 ms   175 ms  ae20--500.uwbr-grl-1.infra.washington.edu [209.124.180.155] 
+ 11     *        *        *     Request timed out.
+ 12     *        *        *     Request timed out.
+ 13     *        *        *     Request timed out.
+ 14     *        *        *     Request timed out.
+
+Trace complete.
+### tracert 1.1.1.1   (2026-10-06 13:32:08, KUWIFI Sejong campus)
+
+Tracing route to one.one.one.one [1.1.1.1]
+over a maximum of 14 hops:
+
+  1    16 ms     1 ms     3 ms  172.16.0.2 
+  2     8 ms     5 ms     2 ms  192.168.98.132 
+  3     8 ms     2 ms     3 ms  163.152.233.129 
+  4     9 ms     8 ms     3 ms  175.121.235.141 
+  5    14 ms     4 ms    10 ms  10.103.1.142 
+  6     9 ms     9 ms     9 ms  10.222.25.122 
+  7    11 ms    10 ms     8 ms  10.222.10.121 
+  8    10 ms     7 ms     9 ms  39.120.253.58 
+  9     6 ms     6 ms     6 ms  211.45.68.81 
+ 10     9 ms     7 ms    12 ms  211.45.68.82 
+ 11    16 ms    14 ms    11 ms  211.56.189.126 
+ 12    39 ms    30 ms     8 ms  141.101.82.19 
+ 13     *        *        *     Request timed out.
+ 14     *        *        *     Request timed out.
+
+Trace complete.
+
+### Appendix - first run (13:0x): www.korea.ac.kr and www.stanford.edu, stopped early
+### korea.ac.kr is KU Anam (163.152.0.0/16): path never leaves KU. stanford.edu -> Netlify/AWS Global Accelerator (anycast), silent after hop 7.
+
+Tracing route to www.korea.ac.kr [163.152.6.10]
+over a maximum of 30 hops:
+
+  1     5 ms     3 ms     1 ms  172.16.0.2 
+  2     3 ms     8 ms     5 ms  192.168.98.132 
+  3    17 ms     9 ms    32 ms  163.152.233.129 
+  4    13 ms    12 ms    11 ms  163.152.205.206 
+  5     *        *        *     Request timed out.
+  6     8 ms     7 ms    10 ms  163.152.4.140 
+  7    12 ms    12 ms     9 ms  163.152.4.150 
+  8     *        *        *     Request timed out.
+  9     *        *        *     Request timed out.
+ 10     *        *        *     Request timed out.
+ 11     *        *        *     Request timed out.
+ 12     *        *        *     Request timed out.
+ 13     *        *        *     Request timed out.
+ 14     *        *        *     Request timed out.
+ 15     *        *        *     Request timed out.
+ 16     *        *        *     Request timed out.
+ 17     *        *        *     Request timed out.
+ 18     *        *        *     Request timed out.
+ 19     *        *        *     Request timed out.
+ 20     *        *        *     Request timed out.
+ 21     *        *        *     Request timed out.
+ 22     *        *        *     Request timed out.
+ 23     *        *        *     Request timed out.
+ 24     *        *        *     Request timed out.
+ 25     *        *        *     Request timed out.
+ 26     *        *        *     Request timed out.
+ 27     *        *        *     Request timed out.
+ 28     *        *        *     Request timed out.
+ 29     *        *        *     Request timed out.
+ 30     *        *        *     Request timed out.
+
+Trace complete.
+
+Tracing route to stanford.netlifyglobalcdn.com [3.33.186.135]
+over a maximum of 30 hops:
+
+  1     2 ms     2 ms     2 ms  172.16.0.2 
+  2    55 ms     5 ms     3 ms  192.168.98.132 
+  3    13 ms     4 ms     6 ms  163.152.233.129 
+  4     4 ms     5 ms     6 ms  175.121.235.141 
+  5     9 ms     6 ms     3 ms  10.103.0.142 
+  6    21 ms    20 ms    19 ms  10.222.25.124 
+  7    14 ms     6 ms     8 ms  10.222.11.129 
+  8     *        *        *     Request timed out.
+  9     *        *        *     Request timed out.
+ 10     *        *        *     Request timed out.
+ 11     *        *        *     Request timed out.
+ 12     *        *        *     Request timed out.
+ 13     *        *        *     Request timed out.
+ 14     *        *        *     Request timed out.
+ 15     *        *        *     Request timed out.
+ 16     *        *        *     Request timed out.
+ 17     *        *        *     Request timed out.
+ 18     *        *        *     Request timed out.
+ 19     *        *        *     Request timed out.
+ 20     *        *        *     Request timed out.
